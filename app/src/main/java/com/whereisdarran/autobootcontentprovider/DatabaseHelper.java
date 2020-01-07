@@ -1,12 +1,10 @@
 package com.whereisdarran.autobootcontentprovider;
 
 import android.content.Context;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import androidx.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,27 +15,18 @@ import java.io.OutputStream;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static String DATABASE_PATH = "/data/data/com.whereisdarran.autobootcontentprovider/databases/";
-    private static final String DATABASE_NAME = "autoboot";
+    private static final String DATABASE_NAME = "autoboot.db";
     private static final int DATABASE_VERSION = 1;
     private Context context;
-    private SQLiteDatabase sqliteDatabase;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         this.context = context;
     }
 
-    public DatabaseHelper(@Nullable Context context, @Nullable String name, @Nullable SQLiteDatabase.CursorFactory factory, int version) {
-        super(context, name, factory, version);
-    }
-
     @Override
     public void onCreate(SQLiteDatabase db) {
-        try {
-            createDatabase();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        createDatabase();
     }
 
     @Override
@@ -46,45 +35,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    /**
-     * This method will create database in application package /databases
-     * directory when first time application launched
-     **/
-    public void createDatabase() throws IOException {
-        boolean mDataBaseExist = checkDataBase();
-        if (!mDataBaseExist) {
-            this.getReadableDatabase();
-            try {
-                copyDataBase();
-            } catch (IOException mIOException) {
-                mIOException.printStackTrace();
-                throw new Error("Error copying database");
-            } finally {
-                this.close();
-            }
+    void createDatabase() {
+        boolean databaseExists = checkDatabase();
+        if (!databaseExists) {
+            copyDatabase();
         }
     }
 
-    /** This method checks whether database is exists or not **/
-    private boolean checkDataBase() {
+    private boolean checkDatabase() {
         try {
             final String mPath = DATABASE_PATH + DATABASE_NAME;
             final File file = new File(mPath);
-            if (file.exists())
-                return true;
-            else
-                return false;
+            return file.exists();
         } catch (SQLiteException e) {
             e.printStackTrace();
-            return false;
         }
+        return false;
     }
 
-    /**
-     * This method will copy database from /assets directory to application
-     * package /databases directory
-     **/
-    private void copyDataBase() throws IOException {
+    private void copyDatabase() {
         try {
 
             InputStream mInputStream = context.getAssets().open(DATABASE_NAME);
@@ -98,25 +67,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mOutputStream.flush();
             mOutputStream.close();
             mInputStream.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    /** This method open database for operations **/
-    public boolean openDataBase() throws SQLException {
-        String mPath = DATABASE_PATH + DATABASE_NAME;
-        sqliteDatabase = SQLiteDatabase.openDatabase(mPath, null,
-                SQLiteDatabase.OPEN_READWRITE);
-        return sqliteDatabase.isOpen();
-    }
-
-    /** This method close database connection and released occupied memory **/
-    @Override
-    public synchronized void close() {
-        if (sqliteDatabase != null)
-            sqliteDatabase.close();
-        SQLiteDatabase.releaseMemory();
-        super.close();
     }
 }
